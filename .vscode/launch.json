@@ -1,0 +1,20 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Lambda Test Script",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/LambdaTestScript.py",
+            "args": ["test_images/lail.jpg"],
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+                "AWS_DEFAULT_REGION": "your-region",
+                "AWS_ACCESS_KEY_ID": "your-access-key",
+                "AWS_SECRET_ACCESS_KEY": "your-secret-key"
+            }
+        }
+    ]
+}

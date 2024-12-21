@@ -1,11 +1,9 @@
 import time
-import matplotlib.pyplot as plt
 import pandas as pd
 from collections import defaultdict
 from typing import Dict
 from SimilarityCalculatorAdvancedCorrected2 import SimilarityCalculatorAdvancedCorrected2
 from WLLMLoader import WLLMModelLoader
-import random
 import boto3
 
 class CosinePredictionHelper:
@@ -19,27 +17,15 @@ class CosinePredictionHelper:
             keras_s3_file = f"{s3_model_path}/best_model.keras"
             self.loaded_models[key] = WLLMModelLoader(keras_s3_file, s3_client=self.s3_client).embedding_model
 
-    def run_pipeline(self, test_image_s3_path: str, save_s3_path: str, plot=True):
-        # Step 1: Calculate predictions
-        predictions, times, total_time = self.calculate_predictions(test_image_s3_path)
+    def run_pipeline(self, test_image_s3_path: str):
+        # Calculate predictions
+        predictions, times = self.calculate_predictions(test_image_s3_path)
 
-        # Step 2: Create dataframe
+        # Create dataframe
         df = self.create_dataframe(predictions)
 
-        # Step 3: Plot results
-        if plot:
-            results_plot_s3_path = f"{save_s3_path}/results_bar_graph.png"
-            self.plot_results_avg(df, results_plot_s3_path)
-
-            # Step 4: Plot times
-            times_plot_s3_path = f"{save_s3_path}/times_bar_graph.png"
-            self.plot_times(times, times_plot_s3_path)
-
-            # Step 5: Save results
-            results_file_s3_path = f"{save_s3_path}/results.csv"
-            self.save_results(df, times, results_file_s3_path)
-
-        top_avg_personalities, top_score_personalities = self.create_top_n_plot(df, self.N)
+        # Get top N predictions
+        top_avg_personalities, top_score_personalities = self.create_top_n(df, self.N)
         return top_avg_personalities, top_score_personalities
 
     def calculate_predictions(self, test_image_s3_path: str):
@@ -64,8 +50,7 @@ class CosinePredictionHelper:
             }
             times[model_name] = time.time() - start_time
 
-        total_time = sum(times.values())
-        return predictions, times, total_time
+        return predictions, times
 
     def create_dataframe(self, predictions):
         data = defaultdict(list)
@@ -83,32 +68,7 @@ class CosinePredictionHelper:
 
         return df
 
-    def plot_results_avg(self, df, save_path: str):
-        avg_df = df["pred_avg"]
-        df_copy = avg_df.loc[:, avg_df.mean(axis=0).nlargest(self.N).index]
-        df_copy.plot(kind="bar", figsize=(20, 8), legend=True)
-        plt.title("Prediction Results based on Average")
-        plt.ylabel("Scores")
-        plt.xlabel("Models")
-        plt.xticks(rotation=45, ha="right")
-        plt.tight_layout()
-        plt.savefig(save_path)
-
-    def plot_times(self, times, save_path: str):
-        plt.figure(figsize=(6, 4))
-        plt.bar(times.keys(), times.values(), color='skyblue')
-        plt.title("Time Taken Per Model")
-        plt.ylabel("Time (seconds)")
-        plt.xlabel("Models")
-        plt.tight_layout()
-        plt.savefig(save_path)
-
-    def save_results(self, df, times, file_path: str):
-        df.to_csv(file_path)
-        time_df = pd.DataFrame(times.items(), columns=["Model", "Time"])
-        time_df.to_csv(file_path.replace(".csv", "_times.csv"), index=False)
-
-    def create_top_n_plot(self, df, top_n: int):
+    def create_top_n(self, df, top_n: int):
         top_avg = df["pred_avg"].mean(axis=0).nlargest(top_n)
         top_score = df["pred_score"].mean(axis=0).nlargest(top_n)
         return top_avg, top_score

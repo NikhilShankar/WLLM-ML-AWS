@@ -18,7 +18,7 @@ Resources:
   WLLMCosinePredictionHelper:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: hello_world/
+      CodeUri: wllm-main-code/
       Handler: Lambda.lambda_handler
       Runtime: python3.11
       Architectures:
